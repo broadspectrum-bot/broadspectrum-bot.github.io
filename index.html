@@ -1,0 +1,1201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Broad Spectrum Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --bg-dark: #0c0c0c;
+            --bg-card: #141414;
+            --bg-elevated: #1a1a1a;
+            --border: #2a2a2a;
+            --text: #e5e5e5;
+            --text-dim: #737373;
+            --orange: #f97316;
+            --orange-dim: rgba(249, 115, 22, 0.15);
+            --green: #22c55e;
+            --green-dim: rgba(34, 197, 94, 0.15);
+            --red: #ef4444;
+            --red-dim: rgba(239, 68, 68, 0.15);
+            --blue: #3b82f6;
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text);
+            min-height: 100vh;
+            font-size: 14px;
+        }
+        
+        .dashboard {
+            padding: 20px;
+            max-width: 1920px;
+            margin: 0 auto;
+        }
+        
+        /* === HEADER METRICS BAR === */
+        .metrics-bar {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .metric-box {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+        }
+        
+        .metric-box .value {
+            font-size: 1.8rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            line-height: 1.2;
+        }
+        
+        .metric-box .label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 4px;
+        }
+        
+        .metric-box .sub {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            margin-top: 2px;
+        }
+        
+        .positive { color: var(--green); }
+        .negative { color: var(--red); }
+        .orange { color: var(--orange); }
+        
+        /* === MAIN GRID === */
+        .main-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 340px;
+            grid-template-rows: auto auto;
+            gap: 16px;
+        }
+        
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+        }
+        
+        .card-title {
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .card-badge {
+            background: var(--bg-elevated);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 0.65rem;
+        }
+        
+        /* === CHARTS === */
+        .chart-container {
+            height: 200px;
+            position: relative;
+        }
+        
+        .chart-tall {
+            height: 280px;
+        }
+        
+        /* === EQUITY CARD === */
+        .equity-card {
+            grid-column: 1 / 3;
+        }
+        
+        /* === TABLES === */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.8rem;
+        }
+        
+        th {
+            text-align: left;
+            padding: 8px 6px;
+            font-size: 0.65rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+        
+        td {
+            padding: 10px 6px;
+            border-bottom: 1px solid var(--bg-elevated);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+        }
+        
+        .right { text-align: right; }
+        
+        .ticker {
+            color: var(--orange);
+            font-weight: 600;
+        }
+        
+        .rank {
+            color: var(--text-dim);
+            width: 30px;
+        }
+        
+        .held-row {
+            background: var(--green-dim);
+        }
+        
+        .held-badge {
+            background: var(--green);
+            color: var(--bg-dark);
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 0.6rem;
+            font-weight: 700;
+        }
+        
+        /* === HEATMAP === */
+        .heatmap-grid {
+            display: grid;
+            grid-template-columns: 50px repeat(12, 1fr) 55px;
+            gap: 2px;
+            font-size: 0.65rem;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .heatmap-header {
+            padding: 6px 2px;
+            text-align: center;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+        
+        .heatmap-year {
+            padding: 8px 4px;
+            font-weight: 600;
+            color: var(--text-dim);
+        }
+        
+        .heatmap-cell {
+            padding: 8px 2px;
+            text-align: center;
+            border-radius: 3px;
+            font-weight: 500;
+        }
+        
+        .heatmap-total {
+            padding: 8px 4px;
+            text-align: right;
+            font-weight: 700;
+        }
+        
+        .heat-5 { background: rgba(34, 197, 94, 0.8); color: #fff; }
+        .heat-4 { background: rgba(34, 197, 94, 0.5); color: var(--green); }
+        .heat-3 { background: rgba(34, 197, 94, 0.25); color: var(--green); }
+        .heat-2 { background: rgba(239, 68, 68, 0.25); color: var(--red); }
+        .heat-1 { background: rgba(239, 68, 68, 0.5); color: var(--red); }
+        .heat-0 { background: rgba(239, 68, 68, 0.8); color: #fff; }
+        .heat-null { background: var(--bg-elevated); color: var(--text-dim); }
+        
+        /* === COUNTDOWN === */
+        .countdown {
+            background: linear-gradient(135deg, #1a1a1a, #252525);
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 12px;
+        }
+        
+        .countdown-days {
+            font-size: 3rem;
+            font-weight: 800;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--orange);
+        }
+        
+        .countdown-label {
+            font-size: 0.7rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        /* === TRADES === */
+        .trade-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 12px;
+            margin: 6px 0;
+            border-radius: 6px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+        
+        .trade-item.sell {
+            background: var(--red-dim);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .trade-item.buy {
+            background: var(--green-dim);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .trade-item .action {
+            font-weight: 700;
+            font-size: 0.7rem;
+            min-width: 35px;
+        }
+        
+        .trade-item.sell .action { color: var(--red); }
+        .trade-item.buy .action { color: var(--green); }
+        
+        .trade-item .ticker { font-weight: 600; }
+        .trade-item .mom { margin-left: auto; color: var(--text-dim); }
+        
+        .no-trades {
+            text-align: center;
+            padding: 20px;
+            color: var(--text-dim);
+            font-size: 0.85rem;
+        }
+        
+        /* === CORRELATION === */
+        .corr-matrix {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        
+        .corr-row {
+            display: flex;
+            gap: 2px;
+        }
+        
+        .corr-cell {
+            width: 50px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.6rem;
+            font-weight: 500;
+        }
+        
+        .corr-header {
+            background: transparent;
+            color: var(--text-dim);
+            font-weight: 600;
+        }
+        
+        .corr-high { background: rgba(239, 68, 68, 0.5); }
+        .corr-med { background: rgba(249, 115, 22, 0.4); }
+        .corr-low { background: rgba(34, 197, 94, 0.3); }
+        .corr-self { background: var(--bg-elevated); color: var(--text-dim); }
+        
+        /* === ALLOCATION === */
+        .alloc-container {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        
+        .alloc-chart {
+            width: 120px;
+            height: 120px;
+        }
+        
+        .alloc-legend {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.75rem;
+        }
+        
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+        }
+        
+        .legend-label { color: var(--text-dim); }
+        .legend-value { margin-left: auto; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+        
+        /* === ROLLING DONUTS === */
+        .donuts-row {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-top: 12px;
+        }
+        
+        .donut-box {
+            text-align: center;
+        }
+        
+        .donut-chart {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 8px;
+            position: relative;
+        }
+        
+        .donut-center {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        
+        .donut-label {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+        }
+        
+        /* === GOAL TRACKER === */
+        .goal-tracker {
+            background: linear-gradient(135deg, #141414 0%, #1a1a1a 100%);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 16px;
+        }
+        .goal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .goal-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+        .goal-target-label {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+        }
+        .goal-status {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px;
+            border-radius: 6px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            font-size: 0.9rem;
+        }
+        .goal-status.on-track { background: var(--green-dim); color: var(--green); }
+        .goal-status.ahead { background: rgba(59, 130, 246, 0.2); color: #60a5fa; }
+        .goal-status.behind { background: rgba(245, 158, 11, 0.2); color: #fbbf24; }
+        .goal-status.critical { background: var(--red-dim); color: var(--red); }
+        .goal-progress-container { margin-bottom: 20px; }
+        .goal-progress-bar {
+            height: 20px;
+            background: var(--bg-elevated);
+            border-radius: 10px;
+            overflow: visible;
+            position: relative;
+        }
+        .goal-progress-fill {
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.5s ease;
+        }
+        .goal-progress-fill.on-track { background: linear-gradient(90deg, #22c55e, #4ade80); }
+        .goal-progress-fill.ahead { background: linear-gradient(90deg, #3b82f6, #60a5fa); }
+        .goal-progress-fill.behind { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+        .goal-progress-fill.critical { background: linear-gradient(90deg, #ef4444, #f87171); }
+        .goal-progress-marker {
+            position: absolute;
+            top: -3px;
+            height: 26px;
+            width: 3px;
+            background: #fff;
+            opacity: 0.9;
+            border-radius: 2px;
+            box-shadow: 0 0 6px rgba(255,255,255,0.5);
+        }
+        .goal-progress-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.7rem;
+            color: var(--text-dim);
+        }
+        .goal-metrics {
+            display: grid;
+            grid-template-columns: repeat(6, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        .goal-metric {
+            background: var(--bg-elevated);
+            padding: 12px;
+            border-radius: 6px;
+            text-align: center;
+        }
+        .goal-metric-value {
+            font-size: 1.2rem;
+            font-weight: 700;
+            font-family: 'JetBrains Mono', monospace;
+            margin-bottom: 2px;
+        }
+        .goal-metric-value.gm-positive { color: var(--green); }
+        .goal-metric-value.gm-negative { color: var(--red); }
+        .goal-metric-value.gm-neutral { color: var(--blue); }
+        .goal-metric-label {
+            font-size: 0.6rem;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .waypoint-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.75rem;
+        }
+        .waypoint-table th {
+            text-align: left;
+            padding: 8px 6px;
+            font-size: 0.6rem;
+            font-weight: 600;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+        .waypoint-table td {
+            padding: 8px 6px;
+            border-bottom: 1px solid var(--bg-elevated);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .waypoint-table tr.wp-current { background: rgba(249, 115, 22, 0.15); }
+        .waypoint-table tr.wp-past { opacity: 0.5; }
+        .waypoint-table .right { text-align: right; }
+        .goal-footer-note {
+            margin-top: 12px;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            text-align: center;
+        }
+        @media (max-width: 900px) {
+            .goal-metrics { grid-template-columns: repeat(3, 1fr); }
+        }
+
+        /* === FOOTER === */
+        .footer {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            color: var(--text-dim);
+            font-size: 0.7rem;
+        }
+        
+        /* === RESPONSIVE === */
+        @media (max-width: 1400px) {
+            .main-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+            .equity-card {
+                grid-column: 1 / -1;
+            }
+        }
+        
+        @media (max-width: 900px) {
+            .metrics-bar {
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard">
+        <!-- METRICS BAR -->
+        <div class="metrics-bar">
+            <div class="metric-box">
+                <div class="value orange">$147,161</div>
+                <div class="label">Portfolio Value</div>
+            </div>
+            <div class="metric-box">
+                <div class="value positive">+9.8%</div>
+                <div class="label">Total Return</div>
+                <div class="sub">NAV-based</div>
+            </div>
+            <div class="metric-box">
+                <div class="value">123.4</div>
+                <div class="label">NAV Peak (ATH)</div>
+                <div class="sub">Mar 03, 2026</div>
+            </div>
+            <div class="metric-box">
+                <div class="value">109.8</div>
+                <div class="label">Current NAV</div>
+                <div class="sub">Started 100.0</div>
+            </div>
+            <div class="metric-box">
+                <div class="value negative">-11.0%</div>
+                <div class="label">Drawdown</div>
+                <div class="sub">From ATH</div>
+            </div>
+            <div class="metric-box">
+                <div class="value negative">-12.3%</div>
+                <div class="label">Max Drawdown</div>
+            </div>
+            <div class="metric-box">
+                <div class="value">29</div>
+                <div class="label">Total Trades</div>
+                <div class="sub">$152 brokerage</div>
+            </div>
+        </div>
+        
+        <!-- MAIN GRID -->
+        <div class="main-grid">
+            <!-- EQUITY CURVE -->
+            <div class="card equity-card">
+                <div class="card-title">
+                    NAV Performance vs S&P500 (indexed to 100)
+                    <span class="card-badge">Since Dec 2025</span>
+                </div>
+                <div class="chart-container"><canvas id="equityChart"></canvas></div>
+            </div>
+            
+            <!-- REBALANCE PANEL -->
+            <div class="card">
+                <div class="card-title">Next Rebalance</div>
+                <div class="countdown">
+                    <div class="countdown-days">21</div>
+                    <div class="countdown-label">Days until Apr 1</div>
+                </div>
+                <div class="card-title">Pending Trades</div>
+                <div class="no-trades">No trades needed</div>
+            </div>
+            
+            <!-- DRAWDOWN -->
+            <div class="card">
+                <div class="card-title">
+                    Drawdown
+                    <span class="card-badge">Current: -11.0%</span>
+                </div>
+                <div class="chart-container"><canvas id="drawdownChart"></canvas></div>
+            </div>
+            
+            <!-- HOLDINGS -->
+            <div class="card">
+                <div class="card-title">
+                    Current Holdings
+                    <span class="card-badge">4 positions</span>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>ETF</th><th>Entry</th><th class="right">Cost</th><th class="right">Price</th>
+                            <th class="right">Qty</th><th class="right">Value</th><th class="right">Wt</th><th class="right">P&L</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td class="ticker">GDX</td>
+                            <td>2026-02-02</td>
+                            <td class="right">$98.63</td>
+                            <td class="right">$102.44</td>
+                            <td class="right">432</td>
+                            <td class="right">$44,254</td>
+                            <td class="right">30.1%</td>
+                            <td class="right positive">$+1,645</td>
+                        </tr>
+                        <tr>
+                            <td class="ticker">SIL</td>
+                            <td>2025-12-01</td>
+                            <td class="right">$89.17</td>
+                            <td class="right">$102.45</td>
+                            <td class="right">424</td>
+                            <td class="right">$43,439</td>
+                            <td class="right">29.5%</td>
+                            <td class="right positive">$+5,631</td>
+                        </tr>
+                        <tr>
+                            <td class="ticker">COPX</td>
+                            <td>2025-12-01</td>
+                            <td class="right">$76.88</td>
+                            <td class="right">$82.24</td>
+                            <td class="right">522</td>
+                            <td class="right">$42,929</td>
+                            <td class="right">29.2%</td>
+                            <td class="right positive">$+2,796</td>
+                        </tr>
+                        <tr>
+                            <td class="ticker">GLD</td>
+                            <td>2025-12-01</td>
+                            <td class="right">$406.97</td>
+                            <td class="right">$472.53</td>
+                            <td class="right">35</td>
+                            <td class="right">$16,539</td>
+                            <td class="right">11.2%</td>
+                            <td class="right positive">$+2,295</td>
+                        </tr>
+                        <tr>
+                            <td class="ticker" style="opacity: 0.6;">CASH</td>
+                            <td>-</td><td>-</td><td>-</td><td>-</td>
+                            <td class="right">$0</td>
+                            <td class="right">0.0%</td>
+                            <td>-</td>
+                        </tr></tbody>
+                </table>
+            </div>
+            
+            <!-- MOMENTUM -->
+            <div class="card">
+                <div class="card-title">
+                    Momentum Rankings
+                    <span class="card-badge">3-Month</span>
+                </div>
+                <div style="max-height: 320px; overflow-y: auto;">
+                <table>
+                    <thead>
+                        <tr><th class="rank">#</th><th>ETF</th><th class="right">Momentum</th><th></th></tr>
+                    </thead>
+                    <tbody>
+                        <tr class="held-row">
+                            <td class="rank">1</td>
+                            <td class="ticker">SIL</td>
+                            <td class="right positive">+0.2%</td>
+                            <td><span class="held-badge">HELD</span></td>
+                        </tr>
+                        <tr class="held-row">
+                            <td class="rank">2</td>
+                            <td class="ticker">GDX</td>
+                            <td class="right positive">+0.2%</td>
+                            <td><span class="held-badge">HELD</span></td>
+                        </tr>
+                        <tr class="held-row">
+                            <td class="rank">3</td>
+                            <td class="ticker">COPX</td>
+                            <td class="right positive">+0.2%</td>
+                            <td><span class="held-badge">HELD</span></td>
+                        </tr>
+                        <tr class="held-row">
+                            <td class="rank">4</td>
+                            <td class="ticker">GLD</td>
+                            <td class="right positive">+0.2%</td>
+                            <td><span class="held-badge">HELD</span></td>
+                        </tr>
+                        <tr class="">
+                            <td class="rank">5</td>
+                            <td class="ticker">DBMF</td>
+                            <td class="right positive">+0.1%</td>
+                            <td></td>
+                        </tr>
+                        <tr class="">
+                            <td class="rank">6</td>
+                            <td class="ticker">URA</td>
+                            <td class="right positive">+0.1%</td>
+                            <td></td>
+                        </tr>
+                        <tr class="">
+                            <td class="rank">7</td>
+                            <td class="ticker">DXJ</td>
+                            <td class="right positive">+0.1%</td>
+                            <td></td>
+                        </tr>
+                        <tr class="">
+                            <td class="rank">8</td>
+                            <td class="ticker">TLT</td>
+                            <td class="right positive">+0.0%</td>
+                            <td></td>
+                        </tr>
+                        <tr class="">
+                            <td class="rank">9</td>
+                            <td class="ticker">SPHB</td>
+                            <td class="right positive">+0.0%</td>
+                            <td></td>
+                        </tr>
+                        <tr class="">
+                            <td class="rank">10</td>
+                            <td class="ticker">EFA</td>
+                            <td class="right positive">+0.0%</td>
+                            <td></td>
+                        </tr>
+                        <tr class="">
+                            <td class="rank">11</td>
+                            <td class="ticker">IEF</td>
+                            <td class="right positive">+0.0%</td>
+                            <td></td>
+                        </tr>
+                        <tr class="">
+                            <td class="rank">12</td>
+                            <td class="ticker">QQQ</td>
+                            <td class="right negative">-0.0%</td>
+                            <td></td>
+                        </tr>
+                        <tr class="">
+                            <td class="rank">13</td>
+                            <td class="ticker">SPY</td>
+                            <td class="right negative">-0.0%</td>
+                            <td></td>
+                        </tr>
+                        <tr class="">
+                            <td class="rank">14</td>
+                            <td class="ticker">IWM</td>
+                            <td class="right negative">-0.0%</td>
+                            <td></td>
+                        </tr>
+                        <tr class="">
+                            <td class="rank">15</td>
+                            <td class="ticker">VGT</td>
+                            <td class="right negative">-0.0%</td>
+                            <td></td>
+                        </tr>
+                        <tr class="">
+                            <td class="rank">16</td>
+                            <td class="ticker">IWY</td>
+                            <td class="right negative">-0.0%</td>
+                            <td></td>
+                        </tr>
+                        <tr class="">
+                            <td class="rank">17</td>
+                            <td class="ticker">XLF</td>
+                            <td class="right negative">-0.1%</td>
+                            <td></td>
+                        </tr>
+                        <tr class="">
+                            <td class="rank">18</td>
+                            <td class="ticker">IBIT</td>
+                            <td class="right negative">-0.2%</td>
+                            <td></td>
+                        </tr></tbody>
+                </table>
+                </div>
+            </div>
+            
+            <!-- MONTHLY HEATMAP -->
+            <div class="card">
+                <div class="card-title">Monthly Returns Heatmap</div>
+                <div class="heatmap-grid">
+                    <div class="heatmap-header"></div>
+                    <div class="heatmap-header">J</div><div class="heatmap-header">F</div><div class="heatmap-header">M</div>
+                    <div class="heatmap-header">A</div><div class="heatmap-header">M</div><div class="heatmap-header">J</div>
+                    <div class="heatmap-header">J</div><div class="heatmap-header">A</div><div class="heatmap-header">S</div>
+                    <div class="heatmap-header">O</div><div class="heatmap-header">N</div><div class="heatmap-header">D</div>
+                    <div class="heatmap-header">YTD</div>
+                    <div class="heatmap-year">2026</div><div class="heatmap-cell heat-5">+6.3</div><div class="heatmap-cell heat-5">+12.6</div><div class="heatmap-cell heat-0">-11.0</div><div class="heatmap-cell heat-null">-</div><div class="heatmap-cell heat-null">-</div><div class="heatmap-cell heat-null">-</div><div class="heatmap-cell heat-null">-</div><div class="heatmap-cell heat-null">-</div><div class="heatmap-cell heat-null">-</div><div class="heatmap-cell heat-null">-</div><div class="heatmap-cell heat-null">-</div><div class="heatmap-cell heat-null">-</div><div class="heatmap-total positive">+7.8%</div>
+                </div>
+            </div>
+            
+            <!-- ANNUAL RETURNS -->
+            <div class="card">
+                <div class="card-title">Annual Returns</div>
+                <div class="chart-container"><canvas id="annualChart"></canvas></div>
+            </div>
+            
+            <!-- ALLOCATION -->
+            <div class="card">
+                <div class="card-title">Asset Allocation</div>
+                <div class="alloc-container">
+                    <div class="alloc-chart"><canvas id="allocChart"></canvas></div>
+                    <div class="alloc-legend">
+                        <div class="legend-item"><div class="legend-dot" style="background:#f97316"></div><span class="legend-label">Precious Metals</span><span class="legend-value">100%</span></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- CORRELATION -->
+            <div class="card">
+                <div class="card-title">
+                    Correlation Matrix
+                    <span class="card-badge">60-Day</span>
+                </div>
+                <div class="corr-matrix"><div class="corr-row"><div class="corr-cell corr-header"></div><div class="corr-cell corr-header">COPX</div><div class="corr-cell corr-header">GLD</div><div class="corr-cell corr-header">SIL</div><div class="corr-cell corr-header">GDX</div></div><div class="corr-row"><div class="corr-cell corr-header">COPX</div><div class="corr-cell corr-self">1.00</div><div class="corr-cell corr-high">0.76</div><div class="corr-cell corr-high">0.79</div><div class="corr-cell corr-high">0.77</div></div><div class="corr-row"><div class="corr-cell corr-header">GLD</div><div class="corr-cell corr-high">0.76</div><div class="corr-cell corr-self">1.00</div><div class="corr-cell corr-high">0.85</div><div class="corr-cell corr-high">0.86</div></div><div class="corr-row"><div class="corr-cell corr-header">SIL</div><div class="corr-cell corr-high">0.79</div><div class="corr-cell corr-high">0.85</div><div class="corr-cell corr-self">1.00</div><div class="corr-cell corr-high">0.97</div></div><div class="corr-row"><div class="corr-cell corr-header">GDX</div><div class="corr-cell corr-high">0.77</div><div class="corr-cell corr-high">0.86</div><div class="corr-cell corr-high">0.97</div><div class="corr-cell corr-self">1.00</div></div></div>
+            </div>
+        </div>
+        
+        <!-- GOAL TRACKER -->
+        <div class="goal-tracker">
+            <div class="goal-header">
+                <span class="goal-title">🎯 Path to $10M</span>
+                <span class="goal-target-label">Target: January 2036</span>
+            </div>
+            <div id="goalStatus" class="goal-status on-track">
+                <span id="goalStatusText">Calculating...</span>
+            </div>
+            <div class="goal-progress-container">
+                <div class="goal-progress-bar">
+                    <div id="goalProgressFill" class="goal-progress-fill on-track" style="width: 0%"></div>
+                    <div id="goalWaypointMarker" class="goal-progress-marker" style="left: 0%"></div>
+                </div>
+                <div class="goal-progress-labels">
+                    <span>$62,490 (Dec 2025)</span>
+                    <span>$10,000,000 (Jan 2036)</span>
+                </div>
+            </div>
+            <div class="goal-metrics">
+                <div class="goal-metric">
+                    <div id="goalCurrentValue" class="goal-metric-value gm-neutral">$0</div>
+                    <div class="goal-metric-label">Current Value</div>
+                </div>
+                <div class="goal-metric">
+                    <div id="goalWaypointValue" class="goal-metric-value gm-neutral">$0</div>
+                    <div class="goal-metric-label">Waypoint Target</div>
+                </div>
+                <div class="goal-metric">
+                    <div id="goalDifference" class="goal-metric-value">$0</div>
+                    <div class="goal-metric-label">vs Waypoint</div>
+                </div>
+                <div class="goal-metric">
+                    <div id="goalRequiredCAGR" class="goal-metric-value gm-neutral">0%</div>
+                    <div class="goal-metric-label">Required CAGR</div>
+                </div>
+                <div class="goal-metric">
+                    <div id="goalYearsRemaining" class="goal-metric-value gm-neutral">0</div>
+                    <div class="goal-metric-label">Years Left</div>
+                </div>
+                <div class="goal-metric">
+                    <div id="goalPctComplete" class="goal-metric-value gm-neutral">0%</div>
+                    <div class="goal-metric-label">Progress</div>
+                </div>
+            </div>
+            <div style="max-height: 320px; overflow-y: auto;">
+            <table class="waypoint-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th class="right">Base Path</th>
+                        <th class="right">Safe Path</th>
+                        <th class="right">Contributions</th>
+                    </tr>
+                </thead>
+                <tbody id="waypointTableBody"></tbody>
+            </table>
+            </div>
+            <div class="goal-footer-note">
+                Base Path: 36.8% CAGR to hit $10M | Safe Path: 41.9% CAGR (survives 25% max DD) | Monthly contribution: $10,000
+            </div>
+        </div>
+        
+        <!-- FOOTER -->
+        <div class="footer">
+            <span>Generated: Mar 10, 2026 at 06:57 AM AWST</span>
+            <span>Broad Spectrum v6.4 (NAV-adjusted + Goal Tracker) | Data from Yahoo Finance</span>
+        </div>
+    </div>
+    
+    <script>
+        Chart.defaults.color = '#737373';
+        Chart.defaults.borderColor = '#2a2a2a';
+        Chart.defaults.font.family = "'Inter', sans-serif";
+        
+        const data = {"labels": ["2026-01-06", "2026-01-07", "2026-01-08", "2026-01-09", "2026-01-10", "2026-01-11", "2026-01-12", "2026-01-13", "2026-01-14", "2026-01-15", "2026-01-16", "2026-01-17", "2026-01-21", "2026-01-22", "2026-01-23", "2026-01-24", "2026-01-27", "2026-01-28", "2026-01-29", "2026-01-30", "2026-01-31", "2026-02-01", "2026-02-02", "2026-02-03", "2026-02-04", "2026-02-07", "2026-02-08", "2026-02-10", "2026-02-11", "2026-02-12", "2026-02-13", "2026-02-14", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-21", "2026-02-24", "2026-02-25", "2026-03-03", "2026-03-04", "2026-03-05", "2026-03-09", "2026-03-10"], "portfolio": [100.0, 101.88505080510627, 100.31562712921236, 100.21095523139341, 101.83303736877316, 101.83303736877316, 101.83303736877316, 103.95283812651473, 104.36737205681197, 104.82554860779732, 105.11305892333975, 105.08326114697871, 106.61934961803007, 107.81159867892757, 109.34318306772455, 111.22552813213788, 112.29143325846039, 114.04232453643426, 115.69152667404498, 115.66524647822655, 106.33606968692263, 106.33606968692263, 105.3249253934498, 104.62168359471873, 110.77778900320618, 108.16389284961551, 108.16389284961551, 113.30979812378673, 112.66793560662865, 115.13111891077656, 108.7323598570979, 112.59678163668359, 112.59678163668359, 108.58785741420235, 111.24294201480872, 115.66793683994678, 118.75423570904694, 119.68894802700864, 123.40281539747517, 113.71692347951968, 114.75038127682537, 108.17481020590003, 109.76827713701005], "spy": [100.00000000000001, 100.18522039679442, 100.53213856893736, 100.60564001192509, 100.79673656472721, 100.49392105811843, 100.40718251637519, 101.07310486994754, 101.30829508957629, 100.21902854093068, 100.06761628827252, 99.79419955911733, 98.69610527839887, 99.44138723355165, 100.34267078219557, 100.96779299589201, 101.42926471470903, 101.78605446899662, 101.77573295147619, 101.41304004505834, 101.2891998322281, 100.53875261896135, 100.72304614888165, 101.99688518738054, 101.66810840958914, 101.6577868920687, 102.33008932926964, 102.33008932926964, 102.33008932926964, 102.49078824808393, 102.28586068183027, 101.7831028929315, 102.06028108182822, 101.9747663643071, 101.9747663643071, 101.05183192538057, 101.57964211600289, 101.61650082198695, 101.61650082198695, 102.539444259621, 102.52912274210057, 102.32566196517195, 102.02047079977903, 102.02047079977903, 102.02047079977903, 102.52764695406799, 101.66073846813383, 101.16830219675549, 101.82143738694812, 101.82143738694812, 102.04258962285247, 102.01900401045398, 100.44292538262731, 100.5136912185303, 100.5136912185303, 100.67586592537715, 101.18304207966611, 100.91618540828982, 101.6459895865157, 101.33932263309022, 102.1944518108864, 100.30433628817894, 101.01202164333138, 100.44881953605005, 100.00062091081858, 100.00062091081858], "drawdown": [0.0, 0.0, -1.5403866057799087, -1.6431218912725476, -0.05105109721406098, -0.05105109721406098, -0.05105109721406098, 0.0, 0.0, 0.0, 0.0, -0.02834831053938336, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, -0.02271574813985655, -8.086553316459277, -8.086553316459277, -8.96055361928324, -9.568413000992692, -4.247275329577949, -6.506642310666533, -6.506642310666533, -2.0586888415507265, -2.613493964804481, -0.48439827823115733, -6.015277883361481, -2.6749971465764077, -2.6749971465764077, -6.140181104063791, -3.8452121664622196, -0.020390286805238578, 0.0, 0.0, 0.0, -7.849004001049442, -7.01153704863271, -12.34007922957543, -11.04880647702312]};
+        
+        // Equity Chart
+        new Chart(document.getElementById('equityChart'), {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [
+                    {
+                        label: 'Strategy',
+                        data: data.portfolio,
+                        borderColor: '#f97316',
+                        backgroundColor: 'rgba(249, 115, 22, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.3,
+                        pointRadius: 0
+                    },
+                    {
+                        label: 'S&P500',
+                        data: data.spy,
+                        borderColor: '#6b7280',
+                        borderWidth: 1.5,
+                        borderDash: [4, 4],
+                        fill: false,
+                        tension: 0.3,
+                        pointRadius: 0
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: {
+                    legend: { display: true, position: 'top', align: 'end', labels: { boxWidth: 12, padding: 15, font: { size: 10 } } },
+                    tooltip: { backgroundColor: '#1a1a1a', padding: 10, callbacks: { label: ctx => ctx.dataset.label + ': ' + (ctx.raw ? ctx.raw.toFixed(2) : 'N/A') } }
+                },
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxTicksLimit: 8, font: { size: 9 } } },
+                    y: { grid: { color: '#1a1a1a' }, ticks: { font: { size: 9 } } }
+                }
+            }
+        });
+        
+        // Drawdown Chart
+        new Chart(document.getElementById('drawdownChart'), {
+            type: 'line',
+            data: {
+                labels: data.labels,
+                datasets: [{
+                    data: data.drawdown,
+                    borderColor: '#ef4444',
+                    backgroundColor: 'rgba(239, 68, 68, 0.3)',
+                    borderWidth: 1.5,
+                    fill: true,
+                    tension: 0.3,
+                    pointRadius: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false }, ticks: { maxTicksLimit: 6, font: { size: 9 } } },
+                    y: { grid: { color: '#1a1a1a' }, ticks: { font: { size: 9 }, callback: v => v + '%' }, max: 0 }
+                }
+            }
+        });
+        
+        // Annual Returns Chart
+        new Chart(document.getElementById('annualChart'), {
+            type: 'bar',
+            data: {
+                labels: ["2026"],
+                datasets: [{
+                    data: [7.844505902242648],
+                    backgroundColor: [7.844505902242648].map(v => v >= 0 ? '#22c55e' : '#ef4444'),
+                    borderRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    x: { grid: { display: false } },
+                    y: { grid: { color: '#1a1a1a' }, ticks: { callback: v => v + '%' } }
+                }
+            }
+        });
+        
+        // Allocation Donut
+        new Chart(document.getElementById('allocChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ["Precious Metals"],
+                datasets: [{ data: [100.0], backgroundColor: ["#f97316"], borderWidth: 0 }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: { legend: { display: false } }
+            }
+        });
+        
+        // ===== GOAL TRACKER =====
+        const GOAL_CONFIG = {
+            startDate: new Date(2025, 11, 1),
+            endDate: new Date(2036, 0, 1),
+            startingCapital: 62490,
+            monthlyContribution: 10000,
+            target: 10000000,
+            baseCAGR: 0.368,
+            safeCAGR: 0.419,
+            maxDD: 0.25
+        };
+
+        // Generate all monthly waypoints programmatically
+        function generateAllWaypoints() {
+            const waypoints = [];
+            const baseMonthlyRate = Math.pow(1 + GOAL_CONFIG.baseCAGR, 1/12) - 1;
+            const safeMonthlyRate = Math.pow(1 + GOAL_CONFIG.safeCAGR, 1/12) - 1;
+            
+            let baseValue = GOAL_CONFIG.startingCapital;
+            let safeValue = GOAL_CONFIG.startingCapital;
+            let totalContrib = GOAL_CONFIG.startingCapital;
+            
+            // Start date
+            let currentDate = new Date(GOAL_CONFIG.startDate);
+            
+            // Add starting point
+            waypoints.push({
+                date: currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0'),
+                base: baseValue,
+                safe: safeValue,
+                contrib: totalContrib
+            });
+            
+            // Generate 121 months
+            for (let m = 0; m < 121; m++) {
+                baseValue = baseValue * (1 + baseMonthlyRate) + GOAL_CONFIG.monthlyContribution;
+                safeValue = safeValue * (1 + safeMonthlyRate) + GOAL_CONFIG.monthlyContribution;
+                totalContrib += GOAL_CONFIG.monthlyContribution;
+                
+                currentDate.setMonth(currentDate.getMonth() + 1);
+                
+                waypoints.push({
+                    date: currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0'),
+                    base: Math.round(baseValue),
+                    safe: Math.round(safeValue),
+                    contrib: Math.round(totalContrib)
+                });
+            }
+            
+            return waypoints;
+        }
+        
+        const WAYPOINTS = generateAllWaypoints();
+
+        function calculateMonthlyWaypoint(currentDate) {
+            const monthsElapsed = (currentDate.getFullYear() - GOAL_CONFIG.startDate.getFullYear()) * 12 
+                                + (currentDate.getMonth() - GOAL_CONFIG.startDate.getMonth());
+            const baseMonthlyRate = Math.pow(1 + GOAL_CONFIG.baseCAGR, 1/12) - 1;
+            const safeMonthlyRate = Math.pow(1 + GOAL_CONFIG.safeCAGR, 1/12) - 1;
+            let baseValue = GOAL_CONFIG.startingCapital;
+            let safeValue = GOAL_CONFIG.startingCapital;
+            let totalContrib = GOAL_CONFIG.startingCapital;
+            for (let m = 0; m < monthsElapsed; m++) {
+                baseValue = baseValue * (1 + baseMonthlyRate) + GOAL_CONFIG.monthlyContribution;
+                safeValue = safeValue * (1 + safeMonthlyRate) + GOAL_CONFIG.monthlyContribution;
+                totalContrib += GOAL_CONFIG.monthlyContribution;
+            }
+            return { base: baseValue, safe: safeValue, contrib: totalContrib, months: monthsElapsed };
+        }
+
+        function calculateRequiredCAGR(currentValue, currentDate) {
+            const monthsRemaining = (GOAL_CONFIG.endDate.getFullYear() - currentDate.getFullYear()) * 12 
+                                  + (GOAL_CONFIG.endDate.getMonth() - currentDate.getMonth());
+            if (monthsRemaining <= 0) return 0;
+            let low = -0.5, high = 2.0;
+            const targetValue = GOAL_CONFIG.target;
+            for (let i = 0; i < 50; i++) {
+                const mid = (low + high) / 2;
+                const monthlyRate = Math.pow(1 + mid, 1/12) - 1;
+                let fv = currentValue;
+                for (let m = 0; m < monthsRemaining; m++) {
+                    fv = fv * (1 + monthlyRate) + GOAL_CONFIG.monthlyContribution;
+                }
+                if (fv < targetValue) { low = mid; } else { high = mid; }
+            }
+            return (low + high) / 2;
+        }
+
+        function formatCurrency(value) {
+            if (value >= 1000000) return '$' + (value / 1000000).toFixed(2) + 'M';
+            if (value >= 1000) return '$' + (value / 1000).toFixed(0) + 'k';
+            return '$' + value.toFixed(0);
+        }
+
+        function formatCurrencyFull(value) {
+            return '$' + value.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        }
+
+        function updateGoalTracker(currentPortfolioValue, currentDate) {
+            const waypoint = calculateMonthlyWaypoint(currentDate);
+            const requiredCAGR = calculateRequiredCAGR(currentPortfolioValue, currentDate);
+            const diff = currentPortfolioValue - waypoint.base;
+            const diffPct = (diff / waypoint.base) * 100;
+            const pctComplete = (currentPortfolioValue / GOAL_CONFIG.target) * 100;
+            const waypointPct = (waypoint.base / GOAL_CONFIG.target) * 100;
+            const totalMonths = 121;
+            const yearsRemaining = (totalMonths - waypoint.months) / 12;
+            
+            let statusText, statusClass;
+            if (diffPct >= 10) {
+                statusText = '🚀 ' + diffPct.toFixed(1) + '% AHEAD of waypoint';
+                statusClass = 'ahead';
+            } else if (diffPct >= -5) {
+                statusText = '✓ ON TRACK (' + (diffPct >= 0 ? '+' : '') + diffPct.toFixed(1) + '% vs waypoint)';
+                statusClass = 'on-track';
+            } else if (diffPct >= -15) {
+                statusText = '⚠ ' + Math.abs(diffPct).toFixed(1) + '% BEHIND waypoint';
+                statusClass = 'behind';
+            } else {
+                statusText = '⛔ ' + Math.abs(diffPct).toFixed(1) + '% BEHIND - needs attention';
+                statusClass = 'critical';
+            }
+            
+            document.getElementById('goalStatus').className = 'goal-status ' + statusClass;
+            document.getElementById('goalStatusText').textContent = statusText;
+            document.getElementById('goalProgressFill').style.width = Math.min(pctComplete, 100) + '%';
+            document.getElementById('goalProgressFill').className = 'goal-progress-fill ' + statusClass;
+            document.getElementById('goalWaypointMarker').style.left = Math.min(waypointPct, 100) + '%';
+            document.getElementById('goalCurrentValue').textContent = formatCurrency(currentPortfolioValue);
+            document.getElementById('goalWaypointValue').textContent = formatCurrency(waypoint.base);
+            
+            const diffEl = document.getElementById('goalDifference');
+            diffEl.textContent = (diff >= 0 ? '+' : '-') + formatCurrency(Math.abs(diff));
+            diffEl.className = 'goal-metric-value ' + (diff >= 0 ? 'gm-positive' : 'gm-negative');
+            
+            const cagrEl = document.getElementById('goalRequiredCAGR');
+            cagrEl.textContent = (requiredCAGR * 100).toFixed(1) + '%';
+            cagrEl.className = 'goal-metric-value ' + (requiredCAGR <= 0.368 ? 'gm-positive' : requiredCAGR <= 0.45 ? 'gm-neutral' : 'gm-negative');
+            
+            document.getElementById('goalYearsRemaining').textContent = yearsRemaining.toFixed(1);
+            document.getElementById('goalPctComplete').textContent = pctComplete.toFixed(2) + '%';
+            
+            const tbody = document.getElementById('waypointTableBody');
+            const currentYearMonth = currentDate.getFullYear() + '-' + String(currentDate.getMonth() + 1).padStart(2, '0');
+            tbody.innerHTML = WAYPOINTS.map(wp => {
+                const isPast = wp.date < currentYearMonth;
+                const isCurrent = wp.date.substring(0, 4) === currentDate.getFullYear().toString();
+                return '<tr class="' + (isPast ? 'wp-past' : '') + ' ' + (isCurrent ? 'wp-current' : '') + '">' +
+                    '<td>' + wp.date + '</td>' +
+                    '<td class="right">' + formatCurrencyFull(wp.base) + '</td>' +
+                    '<td class="right">' + formatCurrencyFull(wp.safe) + '</td>' +
+                    '<td class="right">' + formatCurrencyFull(wp.contrib) + '</td>' +
+                '</tr>';
+            }).join('');
+        }
+
+        // Initialize goal tracker with current portfolio value
+        updateGoalTracker(147161, new Date());
+    </script>
+</body>
+</html>
